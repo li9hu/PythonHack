@@ -1,6 +1,19 @@
 #encoding=utf8
 import socket
 import os
+import struct
+from ctypes import *
+
+host = '192.168.43.65' #表示所有网卡
+class IP(Structure):
+    _fields_ = [
+        ("ihl",  c_ubyte, 4),
+        ("version",  c_ubyte, 4),
+        ("tos", c_ubyte),
+        ("len", c_ushort),
+        ("id",  c_ushort),
+        ("offset",  c_ushort),
+        ("tt1", c_ubyte),
         ("protocol_num",    c_ubyte),
         ("sum", c_short),
         ("src", c_uint32),
