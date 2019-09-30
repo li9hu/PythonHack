@@ -81,7 +81,7 @@ sniffer.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 
 if os.name == "nt":
     sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)
-if 1:
+try:
 	while True:
 		raw_buffer = sniffer.recvfrom(65535)[0]
 		ip_header = IP(raw_buffer)
@@ -96,6 +96,6 @@ if 1:
 			if IPAdress(ip_header.src_adress) in IPNetwork(subnet):
 				if raw_buffer[len(raw_buffer)-len(magic_message):] == magic_message:
 					print "host UP:"%s %ip_header.src_address
-else:
+except:
     if os.name == "nt":
         sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
