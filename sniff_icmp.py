@@ -1,9 +1,11 @@
+#encoding=utf8
 import threading
 import time
 import socket
 import os
+import struct
 from ctypes import *
-from netaddr import IPNetwork,IPAdderss
+from netaddr import IPNetwork,IPAddress
 
 
 class IP(Structure):
@@ -20,6 +22,7 @@ class IP(Structure):
         ("src", c_uint32),
         ("dst", c_uint32)
     ]
+
     def __new__(self, socket_buffer=None):
         return self.from_buffer_copy(socket_buffer)
 
@@ -34,8 +37,8 @@ class IP(Structure):
             self.protocol = str(self.protocol_num)
 
 class ICMP(Structure):
-    __filed__ = [
-        ("type",    c_ubyte),
+    _fields_ = [
+        ("types",    c_ubyte),
         ("code",    c_ubyte),
         ("checksum",    c_ushort),
         ("unused",  c_ushort),
@@ -48,6 +51,23 @@ class ICMP(Structure):
     def __init__(self, socket_buffer):
         pass
 
+host = '172.17.12.231'
+subnet = "172.17.12.0/24"
+
+magic_message = "PYTHONRULES"
+
+def udp_sender(subnet,magic_massage):
+	time.sleep(5)
+	sender = socket.socket(socket.AF_INET, socke.SOCK_DGRAM)
+
+	for ip in IPNetwork(subnet):
+		try:
+			sender.sendto(magic_massage,("%s" %ip,65212))
+		except:
+			pass
+
+t = threading.Thread(target=udp_sender,args=(subnet,magic_message))
+t.start()
 
 if os.name =='nt':
     socket_protocol = socket.IPPROTO_IP
@@ -61,19 +81,21 @@ sniffer.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 
 if os.name == "nt":
     sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)
-try:
-    while True:
-        raw_buffer = sniffer.recvfrom(65535)[0]
-        ip_header = IP(raw_buffer)
-
-        print ("Potocol: %s  %s -> %s "% (ip_header.protocol, ip_header.src_address, ip_header.dst_address))
-
-        if ip_header.protocol == "ICMP":
-            offset = ip_header.ihl * 4
-            buf  = raw_buffer[offset:offset + sizeof(ICMP)]
-
-            icmp_header = ICMP(buf)
-            print "ICMP -> Type: %d Code: %d "%(icmp_header.type, icmp_header.code)
-except:
+if 1:
+	while True:
+		raw_buffer = sniffer.recvfrom(65535)[0]
+		ip_header = IP(raw_buffer)
+		print ("Potocol: %s  %s -> %s "% (ip_header.protocol, ip_header.src_address, ip_header.dst_address))
+		if ip_header.protocol == "ICMP":
+			offset = ip_header.ihl * 4
+			buf  = raw_buffer[offset:offset + sizeof(ICMP)]
+			icmp_header = ICMP(buf)
+			print "ICMP -> Type: %d Code: %d "% (icmp_header.types, icmp_header.code)
+		if 3 == icmp_header.code and icmp_header.types == 3 :
+			print "ok"
+			if IPAdress(ip_header.src_adress) in IPNetwork(subnet):
+				if raw_buffer[len(raw_buffer)-len(magic_message):] == magic_message:
+					print "host UP:"%s %ip_header.src_address
+else:
     if os.name == "nt":
         sniffer.ioctl(socket.SIO_RCVALL, socket.RCVALL_OFF)
